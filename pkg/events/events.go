@@ -20,6 +20,7 @@ import (
 	"sync"
 	"syscall"
 	"unsafe"
+	"sync/atomic"
 
 	constdef "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/constants"
 	poller "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/events/poll"
@@ -199,10 +200,54 @@ func (ev *events) reconcileEventsDataChannel() {
 
 // Similar to libbpf poll ring
 func (ev *events) readRingBuffer(eventRing *RingBuffer) {
+	/*
 	readDone := true
 	consPosition := eventRing.getConsumerPosition()
 	for !readDone {
 		readDone = ev.parseBuffer(consPosition, eventRing)
+	}
+	*/
+	var done bool
+	cons_pos := eventRing.getConsumerPosition()
+	for {
+		done = true
+		prod_pos := eventRing.getProducerPosition()
+		for cons_pos < prod_pos {
+
+			//Get the header - Data points to the DataPage which will be offset by cons_pos
+			buf := (*int32)(unsafe.Pointer(uintptr(eventRing.Data) + (uintptr(cons_pos) & uintptr(eventRing.Mask))))
+
+			//Get the len which is uint32 in header struct
+			Hdrlen := atomic.LoadInt32(buf)
+
+			//Check if busy then skip
+			if uint32(Hdrlen)&unix.BPF_RINGBUF_BUSY_BIT != 0 {
+				done = true
+				break
+			}
+
+			done = false
+
+			// Len in ringbufHeader has busy and discard bit so skip it
+			dataLen := (((uint32(Hdrlen) << 2) >> 2) + uint32(ringbufHeaderSize))
+			//round up dataLen to nearest 8-byte alignment
+			roundedDataLen := (dataLen + 7) &^ 7
+
+			cons_pos += uint64(roundedDataLen)
+
+			if uint32(Hdrlen)&unix.BPF_RINGBUF_DISCARD_BIT == 0 {
+				readableSample := unsafe.Pointer(uintptr(unsafe.Pointer(buf)) + uintptr(ringbufHeaderSize))
+				dataBuf := make([]byte, int(roundedDataLen))
+				memcpy(unsafe.Pointer(&dataBuf[0]), readableSample, uintptr(roundedDataLen))
+				ev.eventsDataChannel <- dataBuf
+			}
+
+			//eventRing.setConsumerPosition(consumerPosition)
+			atomic.StoreUint64((*uint64)(eventRing.Consumerpos), cons_pos)
+		}
+		if done {
+			break
+		}
 	}
 }
 
