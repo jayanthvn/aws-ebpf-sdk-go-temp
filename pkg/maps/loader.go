@@ -22,9 +22,9 @@ import (
 	"runtime"
 	"unsafe"
 
-	constdef "github.com/aws/aws-ebpf-sdk-go/pkg/constants"
-	"github.com/aws/aws-ebpf-sdk-go/pkg/logger"
-	"github.com/aws/aws-ebpf-sdk-go/pkg/utils"
+	constdef "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/constants"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/logger"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/utils"
 	"golang.org/x/sys/unix"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/aws/aws-ebpf-sdk-go/pkg/logger"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/logger"
 	"golang.org/x/sys/unix"
 )
 
@@ -49,6 +49,8 @@ func (e *EventPoller) AddEpollCtl(mapFD, eventFD int) error {
 		return fmt.Errorf("failed to Epoll event: %s", err)
 	}
 	e.epollEvent = append(e.epollEvent, epollEvent)
+	e.bufferCnt++
+
 	return nil
 }
 
@@ -78,6 +80,7 @@ func (e *EventPoller) eventsPoller() {
 			break
 		}
 		totalEvents := e.poll(e.epollEvent[:e.bufferCnt])
+		log.Infof("JAY got toal events %d", totalEvents)
 		e.getEventFDs(totalEvents)
 	}
 }

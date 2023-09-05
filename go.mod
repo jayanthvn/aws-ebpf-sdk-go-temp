@@ -1,4 +1,4 @@
-module github.com/aws/aws-ebpf-sdk-go
+module github.com/jayanthvn/aws-ebpf-sdk-go-temp
 
 go 1.19
 

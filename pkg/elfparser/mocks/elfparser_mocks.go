@@ -7,8 +7,8 @@ package mock_elfparser
 import (
 	reflect "reflect"
 
-	elfparser "github.com/aws/aws-ebpf-sdk-go/pkg/elfparser"
-	maps "github.com/aws/aws-ebpf-sdk-go/pkg/maps"
+	elfparser "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/elfparser"
+	maps "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/maps"
 	gomock "github.com/golang/mock/gomock"
 )
 

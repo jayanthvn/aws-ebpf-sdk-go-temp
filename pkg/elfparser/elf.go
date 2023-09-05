@@ -28,12 +28,12 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aws/aws-ebpf-sdk-go/pkg/cache"
-	constdef "github.com/aws/aws-ebpf-sdk-go/pkg/constants"
-	"github.com/aws/aws-ebpf-sdk-go/pkg/logger"
-	ebpf_maps "github.com/aws/aws-ebpf-sdk-go/pkg/maps"
-	ebpf_progs "github.com/aws/aws-ebpf-sdk-go/pkg/progs"
-	"github.com/aws/aws-ebpf-sdk-go/pkg/utils"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/cache"
+	constdef "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/constants"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/logger"
+	ebpf_maps "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/maps"
+	ebpf_progs "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/progs"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/utils"
 )
 
 var (

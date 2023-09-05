@@ -21,10 +21,10 @@ import (
 	"syscall"
 	"unsafe"
 
-	constdef "github.com/aws/aws-ebpf-sdk-go/pkg/constants"
-	poller "github.com/aws/aws-ebpf-sdk-go/pkg/events/poll"
-	"github.com/aws/aws-ebpf-sdk-go/pkg/logger"
-	ebpf_maps "github.com/aws/aws-ebpf-sdk-go/pkg/maps"
+	constdef "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/constants"
+	poller "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/events/poll"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/logger"
+	ebpf_maps "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/maps"
 	"golang.org/x/sys/unix"
 )
 
@@ -138,13 +138,13 @@ func (ev *events) setupRingBuffer(mapFD int, maxEntries uint32) (chan []byte, er
 	ringbuffer.Data = unsafe.Pointer(uintptr(unsafe.Pointer(&producer[0])) + uintptr(ev.PageSize))
 
 	ev.RingBuffers = append(ev.RingBuffers, ringbuffer)
-	ev.RingCnt++
 
 	err = ev.epoller.AddEpollCtl(mapFD, ev.RingCnt)
 	if err != nil {
 		unix.Munmap(producer)
 		return nil, fmt.Errorf("failed to Epoll event: %s", err)
 	}
+	ev.RingCnt++
 
 	//Start channels read
 	ev.eventsStopChannel = make(chan struct{})
@@ -179,6 +179,7 @@ func (ev *events) reconcileEventsDataChannelHandler(pollerCh <-chan int) {
 			if !ok {
 				return
 			}
+			log.Infof("Got event for %d", bufferPtr)
 			ev.readRingBuffer(ev.RingBuffers[bufferPtr])
 
 		case <-ev.eventsStopChannel:
@@ -190,16 +191,31 @@ func (ev *events) reconcileEventsDataChannelHandler(pollerCh <-chan int) {
 func (ev *events) reconcileEventsDataChannel() {
 
 	pollerCh := ev.epoller.EpollStart()
-	defer ev.wg.Done()
+	defer func() {
+		ev.wg.Done()
+	}()
 
-	go ev.reconcileEventsDataChannelHandler(pollerCh)
+	//go ev.reconcileEventsDataChannelHandler(pollerCh)
 
-	<-ev.eventsStopChannel
+	//<-ev.eventsStopChannel
+	for {
+		select {
+		case bufferPtr, ok := <-pollerCh:
+			if !ok {
+				return
+			}
+			log.Infof("Got event for %d", bufferPtr)
+			ev.readRingBuffer(ev.RingBuffers[bufferPtr])
+
+		case <-ev.eventsStopChannel:
+			return
+		}
+	}
 }
 
 // Similar to libbpf poll ring
 func (ev *events) readRingBuffer(eventRing *RingBuffer) {
-	readDone := true
+	readDone := false 
 	consPosition := eventRing.getConsumerPosition()
 	for !readDone {
 		readDone = ev.parseBuffer(consPosition, eventRing)

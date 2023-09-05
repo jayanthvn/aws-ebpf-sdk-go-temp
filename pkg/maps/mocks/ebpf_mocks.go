@@ -7,7 +7,7 @@ package mock_maps
 import (
 	reflect "reflect"
 
-	maps "github.com/aws/aws-ebpf-sdk-go/pkg/maps"
+	maps "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/maps"
 	gomock "github.com/golang/mock/gomock"
 )
 

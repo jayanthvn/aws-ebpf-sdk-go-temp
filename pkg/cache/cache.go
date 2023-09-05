@@ -17,7 +17,7 @@ package cache
 import (
 	"sync"
 
-	"github.com/aws/aws-ebpf-sdk-go/pkg/logger"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/logger"
 )
 
 var sdkCache GlobalCache
