@@ -7,7 +7,7 @@ package mock_progs
 import (
 	reflect "reflect"
 
-	progs "github.com/aws/aws-ebpf-sdk-go/pkg/progs"
+	progs "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/progs"
 	gomock "github.com/golang/mock/gomock"
 )
 

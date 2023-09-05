@@ -21,10 +21,10 @@ import (
 	"syscall"
 	"unsafe"
 
-	constdef "github.com/aws/aws-ebpf-sdk-go/pkg/constants"
-	poller "github.com/aws/aws-ebpf-sdk-go/pkg/events/poll"
-	"github.com/aws/aws-ebpf-sdk-go/pkg/logger"
-	ebpf_maps "github.com/aws/aws-ebpf-sdk-go/pkg/maps"
+	constdef "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/constants"
+	poller "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/events/poll"
+	"github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/logger"
+	ebpf_maps "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/maps"
 	"golang.org/x/sys/unix"
 )
 
