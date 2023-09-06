@@ -140,14 +140,15 @@ func (ev *events) setupRingBuffer(mapFD int, maxEntries uint32) (chan []byte, er
 	ringbuffer.Data = unsafe.Pointer(uintptr(unsafe.Pointer(&producer[0])) + uintptr(ev.PageSize))
 
 	ev.RingBuffers = append(ev.RingBuffers, ringbuffer)
-	ev.RingCnt++
 
-	log.Infof("Setup for ring number %d", ev.RingCnt)
+	log.Infof("JAY eventFD %d", ev.RingCnt)
 	err = ev.epoller.AddEpollCtl(mapFD, ev.RingCnt)
 	if err != nil {
 		unix.Munmap(producer)
 		return nil, fmt.Errorf("failed to Epoll event: %s", err)
 	}
+	ev.RingCnt++
+	log.Infof("Setup for ring number %d", ev.RingCnt)
 
 	//Start channels read
 	ev.eventsStopChannel = make(chan struct{})
