@@ -105,6 +105,7 @@ func (ev *events) InitRingBuffer(mapFDlist []int) (map[int]chan []byte, error) {
 
 		log.Infof("Ringbuffer setup done for %d", mapFD)
 		ringBufferChanList[mapFD] = eventsChan
+		log.Infof("JAY added events chan to mapFD %d", mapFD)
 	}
 	return ringBufferChanList, nil
 }
@@ -141,6 +142,7 @@ func (ev *events) setupRingBuffer(mapFD int, maxEntries uint32) (chan []byte, er
 	ev.RingBuffers = append(ev.RingBuffers, ringbuffer)
 	ev.RingCnt++
 
+	log.Infof("Setup for ring number %d", ev.RingCnt)
 	err = ev.epoller.AddEpollCtl(mapFD, ev.RingCnt)
 	if err != nil {
 		unix.Munmap(producer)
@@ -151,6 +153,7 @@ func (ev *events) setupRingBuffer(mapFD int, maxEntries uint32) (chan []byte, er
 	ev.eventsStopChannel = make(chan struct{})
 	ev.eventsDataChannel = make(chan []byte)
 
+	log.Infof("JAY Added to epoll mapFD %d and created channels", mapFD)
 	ev.wg.Add(1)
 	go ev.reconcileEventsDataChannel()
 	return ev.eventsDataChannel, nil
@@ -190,12 +193,35 @@ func (ev *events) reconcileEventsDataChannelHandler(pollerCh <-chan int) {
 
 func (ev *events) reconcileEventsDataChannel() {
 
+	log.Infof("JAY Started eventsDataChannel")
+	/*
 	pollerCh := ev.epoller.EpollStart()
 	defer ev.wg.Done()
 
 	go ev.reconcileEventsDataChannelHandler(pollerCh)
 
 	<-ev.eventsStopChannel
+	*/
+	pollerCh := ev.epoller.EpollStart()
+	defer func() {
+		ev.wg.Done()
+	}()
+
+	for {
+		select {
+		case bufferPtr, ok := <-pollerCh:
+
+			if !ok {
+				return
+			}
+			log.Infof("Got event for %d", bufferPtr)
+			ev.readRingBuffer(ev.RingBuffers[bufferPtr])
+			//rb.ReadRingBuffer(buffer)
+
+		case <-ev.eventsStopChannel:
+			return
+		}
+	}
 }
 
 // Similar to libbpf poll ring
@@ -208,6 +234,7 @@ func (ev *events) readRingBuffer(eventRing *RingBuffer) {
 	}
 	*/
 	var done bool
+	log.Infof("JAY Reading ringbuffer")
 	cons_pos := eventRing.getConsumerPosition()
 	for {
 		done = true
@@ -223,6 +250,7 @@ func (ev *events) readRingBuffer(eventRing *RingBuffer) {
 			//Check if busy then skip
 			if uint32(Hdrlen)&unix.BPF_RINGBUF_BUSY_BIT != 0 {
 				done = true
+				log.Infof("Channel busy JAY")
 				break
 			}
 
@@ -239,10 +267,12 @@ func (ev *events) readRingBuffer(eventRing *RingBuffer) {
 				readableSample := unsafe.Pointer(uintptr(unsafe.Pointer(buf)) + uintptr(ringbufHeaderSize))
 				dataBuf := make([]byte, int(roundedDataLen))
 				memcpy(unsafe.Pointer(&dataBuf[0]), readableSample, uintptr(roundedDataLen))
+				log.Infof("JAY got data push it to channel")
 				ev.eventsDataChannel <- dataBuf
 			}
 
 			//eventRing.setConsumerPosition(consumerPosition)
+			log.Infof("JAY set consumer pos")
 			atomic.StoreUint64((*uint64)(eventRing.Consumerpos), cons_pos)
 		}
 		if done {
