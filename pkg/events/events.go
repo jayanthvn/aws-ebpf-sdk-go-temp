@@ -179,6 +179,7 @@ func (ev *events) reconcileEventsDataChannelHandler(pollerCh <-chan int) {
 			if !ok {
 				return
 			}
+			log.Infof("Got event for %d", bufferPtr)
 			ev.readRingBuffer(ev.RingBuffers[bufferPtr])
 
 		case <-ev.eventsStopChannel:
@@ -192,9 +193,22 @@ func (ev *events) reconcileEventsDataChannel() {
 	pollerCh := ev.epoller.EpollStart()
 	defer ev.wg.Done()
 
-	go ev.reconcileEventsDataChannelHandler(pollerCh)
+	//go ev.reconcileEventsDataChannelHandler(pollerCh)
 
-	<-ev.eventsStopChannel
+	//<-ev.eventsStopChannel
+	for {
+		select {
+		case bufferPtr, ok := <-pollerCh:
+			if !ok {
+				return
+			}
+			log.Infof("Got event for %d", bufferPtr)
+			ev.readRingBuffer(ev.RingBuffers[bufferPtr])
+
+		case <-ev.eventsStopChannel:
+			return
+		}
+	}
 }
 
 // Similar to libbpf poll ring

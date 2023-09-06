@@ -80,6 +80,7 @@ func (e *EventPoller) eventsPoller() {
 			break
 		}
 		totalEvents := e.poll(e.epollEvent[:e.bufferCnt])
+		log.Infof("JAY got toal events %d", totalEvents)
 		e.getEventFDs(totalEvents)
 	}
 }
