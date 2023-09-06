@@ -20,7 +20,6 @@ import (
 	"sync"
 	"syscall"
 	"unsafe"
-	"sync/atomic"
 
 	constdef "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/constants"
 	poller "github.com/jayanthvn/aws-ebpf-sdk-go-temp/pkg/events/poll"
@@ -105,7 +104,6 @@ func (ev *events) InitRingBuffer(mapFDlist []int) (map[int]chan []byte, error) {
 
 		log.Infof("Ringbuffer setup done for %d", mapFD)
 		ringBufferChanList[mapFD] = eventsChan
-		log.Infof("JAY added events chan to mapFD %d", mapFD)
 	}
 	return ringBufferChanList, nil
 }
@@ -141,20 +139,17 @@ func (ev *events) setupRingBuffer(mapFD int, maxEntries uint32) (chan []byte, er
 
 	ev.RingBuffers = append(ev.RingBuffers, ringbuffer)
 
-	log.Infof("JAY eventFD %d", ev.RingCnt)
 	err = ev.epoller.AddEpollCtl(mapFD, ev.RingCnt)
 	if err != nil {
 		unix.Munmap(producer)
 		return nil, fmt.Errorf("failed to Epoll event: %s", err)
 	}
 	ev.RingCnt++
-	log.Infof("Setup for ring number %d", ev.RingCnt)
 
 	//Start channels read
 	ev.eventsStopChannel = make(chan struct{})
 	ev.eventsDataChannel = make(chan []byte)
 
-	log.Infof("JAY Added to epoll mapFD %d and created channels", mapFD)
 	ev.wg.Add(1)
 	go ev.reconcileEventsDataChannel()
 	return ev.eventsDataChannel, nil
@@ -194,91 +189,20 @@ func (ev *events) reconcileEventsDataChannelHandler(pollerCh <-chan int) {
 
 func (ev *events) reconcileEventsDataChannel() {
 
-	log.Infof("JAY Started eventsDataChannel")
-	/*
 	pollerCh := ev.epoller.EpollStart()
 	defer ev.wg.Done()
 
 	go ev.reconcileEventsDataChannelHandler(pollerCh)
 
 	<-ev.eventsStopChannel
-	*/
-	pollerCh := ev.epoller.EpollStart()
-	defer func() {
-		ev.wg.Done()
-	}()
-
-	for {
-		select {
-		case bufferPtr, ok := <-pollerCh:
-
-			if !ok {
-				return
-			}
-			log.Infof("Got event for %d", bufferPtr)
-			ev.readRingBuffer(ev.RingBuffers[bufferPtr])
-			//rb.ReadRingBuffer(buffer)
-
-		case <-ev.eventsStopChannel:
-			return
-		}
-	}
 }
 
 // Similar to libbpf poll ring
 func (ev *events) readRingBuffer(eventRing *RingBuffer) {
-	/*
 	readDone := true
 	consPosition := eventRing.getConsumerPosition()
 	for !readDone {
 		readDone = ev.parseBuffer(consPosition, eventRing)
-	}
-	*/
-	var done bool
-	log.Infof("JAY Reading ringbuffer")
-	cons_pos := eventRing.getConsumerPosition()
-	for {
-		done = true
-		prod_pos := eventRing.getProducerPosition()
-		for cons_pos < prod_pos {
-
-			//Get the header - Data points to the DataPage which will be offset by cons_pos
-			buf := (*int32)(unsafe.Pointer(uintptr(eventRing.Data) + (uintptr(cons_pos) & uintptr(eventRing.Mask))))
-
-			//Get the len which is uint32 in header struct
-			Hdrlen := atomic.LoadInt32(buf)
-
-			//Check if busy then skip
-			if uint32(Hdrlen)&unix.BPF_RINGBUF_BUSY_BIT != 0 {
-				done = true
-				log.Infof("Channel busy JAY")
-				break
-			}
-
-			done = false
-
-			// Len in ringbufHeader has busy and discard bit so skip it
-			dataLen := (((uint32(Hdrlen) << 2) >> 2) + uint32(ringbufHeaderSize))
-			//round up dataLen to nearest 8-byte alignment
-			roundedDataLen := (dataLen + 7) &^ 7
-
-			cons_pos += uint64(roundedDataLen)
-
-			if uint32(Hdrlen)&unix.BPF_RINGBUF_DISCARD_BIT == 0 {
-				readableSample := unsafe.Pointer(uintptr(unsafe.Pointer(buf)) + uintptr(ringbufHeaderSize))
-				dataBuf := make([]byte, int(roundedDataLen))
-				memcpy(unsafe.Pointer(&dataBuf[0]), readableSample, uintptr(roundedDataLen))
-				log.Infof("JAY got data push it to channel")
-				ev.eventsDataChannel <- dataBuf
-			}
-
-			//eventRing.setConsumerPosition(consumerPosition)
-			log.Infof("JAY set consumer pos")
-			atomic.StoreUint64((*uint64)(eventRing.Consumerpos), cons_pos)
-		}
-		if done {
-			break
-		}
 	}
 }
 

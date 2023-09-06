@@ -50,6 +50,7 @@ func (e *EventPoller) AddEpollCtl(mapFD, eventFD int) error {
 	}
 	e.epollEvent = append(e.epollEvent, epollEvent)
 	e.bufferCnt++
+
 	return nil
 }
 
