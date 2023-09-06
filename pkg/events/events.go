@@ -191,7 +191,9 @@ func (ev *events) reconcileEventsDataChannelHandler(pollerCh <-chan int) {
 func (ev *events) reconcileEventsDataChannel() {
 
 	pollerCh := ev.epoller.EpollStart()
-	defer ev.wg.Done()
+	defer func() {
+		ev.wg.Done()
+	}()
 
 	//go ev.reconcileEventsDataChannelHandler(pollerCh)
 
@@ -213,7 +215,7 @@ func (ev *events) reconcileEventsDataChannel() {
 
 // Similar to libbpf poll ring
 func (ev *events) readRingBuffer(eventRing *RingBuffer) {
-	readDone := true
+	readDone := false 
 	consPosition := eventRing.getConsumerPosition()
 	for !readDone {
 		readDone = ev.parseBuffer(consPosition, eventRing)
