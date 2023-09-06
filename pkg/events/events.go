@@ -195,9 +195,10 @@ func (ev *events) reconcileEventsDataChannel() {
 		ev.wg.Done()
 	}()
 
-	//go ev.reconcileEventsDataChannelHandler(pollerCh)
+	go ev.reconcileEventsDataChannelHandler(pollerCh)
 
-	//<-ev.eventsStopChannel
+	<-ev.eventsStopChannel
+	/*
 	for {
 		select {
 		case bufferPtr, ok := <-pollerCh:
@@ -211,6 +212,7 @@ func (ev *events) reconcileEventsDataChannel() {
 			return
 		}
 	}
+	*/
 }
 
 // Similar to libbpf poll ring
